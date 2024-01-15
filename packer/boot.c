@@ -39,9 +39,14 @@ int execute_elf(char *filename) {
     mprotect(elf_mem, elf_size, PROT_READ | PROT_EXEC);
     
     Elf64_Ehdr *elf_header = (Elf64_Ehdr *)elf_mem;
-    Elf64_Addr entry_point = elf_header->e_entry;
+    Elf64_Addr entry_point = elf_header->e_entry+elf_mem;
 
-    void (*func)() = (void (*)())entry_point;
+    printf("точка входа в программу: %x\
+    начало выделенной области памяти: %x\
+    размер эльф файла: %d\n",\
+    entry_point, elf_mem, elf_size);
+
+    void (*func)() = (void (*)())(entry_point);
     func();
 
     if (munmap(elf_mem, elf_size) == -1) {
