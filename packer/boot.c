@@ -35,16 +35,24 @@ int execute_elf(char *filename) {
         perror("mmap");
         exit(EXIT_FAILURE);
     }
+    // while(1){
+    //     char buf[10];
+    //     memcpy(buf, elf_code, 10);
+    //     printf("%s", buf);
+    //     elf_code+=10;
+    // }
+
 
     mprotect(elf_mem, elf_size, PROT_READ | PROT_EXEC);
     
     Elf64_Ehdr *elf_header = (Elf64_Ehdr *)elf_mem;
-    Elf64_Addr entry_point = elf_header->e_entry+elf_mem;
+    // Elf64_Addr entry_point = elf_header->e_entry+elf_mem;
+    Elf64_Addr entry_point = elf_mem + 4096;
 
-    printf("точка входа в программу: %x\
-    начало выделенной области памяти: %x\
-    размер эльф файла: %d\n",\
-    entry_point, elf_mem, elf_size);
+    // printf("точка входа в программу: %x\
+    // начало выделенной области памяти: %x\
+    // размер эльф файла: %d\n",\
+    // entry_point, elf_mem, elf_size);
 
     void (*func)() = (void (*)())(entry_point);
     func();
