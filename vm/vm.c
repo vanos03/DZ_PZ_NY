@@ -141,32 +141,32 @@ void start(uint16_t offset){
         uint16_t instr = mread(registers[RPC]++);
         // printf("instruction %x\n", GET_TRAP_OPC(instr));
         switch(GET_OPC(instr)){
-            case 0x1:
-            {
-                add(instr);
-                break;
-            }
+            // case 0x1:
+            // {
+            //     add(instr);
+            //     break;
+            // }
 
-            case OPC_AND:
-            {
-                and(instr);
-                break;
-            }
-            case OPC_OR:
-            {
-                or(instr);
-                break;
-            }
-            case OPC_NOT:
-            {
-                not(instr);
-                break;
-            }
-            case OPC_XOR:
-            {
-                xor(instr);
-                break;
-            }
+            // case OPC_AND:
+            // {
+            //     and(instr);
+            //     break;
+            // }
+            // case OPC_OR:
+            // {
+            //     or(instr);
+            //     break;
+            // }
+            // case OPC_NOT:
+            // {
+            //     not(instr);
+            //     break;
+            // }
+            // case OPC_XOR:
+            // {
+            //     xor(instr);
+            //     break;
+            // }
             case 0xf:
             {
                 trap(instr);
@@ -198,21 +198,22 @@ uint16_t program[] = {
 // };
 
 int gen_obj_file() {
-    char *outf = "sum.obj";
+    char *outf = "test.obj";
     FILE *f = fopen(outf, "wb");
     if (NULL==f) {
-        fprintf(stderr, "Cannot write to file %s\n", outf);
+        perror(outf);
+        exit(EXIT_FAILURE);
     }
     size_t writ = fwrite(program, sizeof(uint16_t), sizeof(program), f);
-    fprintf(stdout, "Written size_t=%lu to file %s\n", writ, outf);
+    printf("Written size_t = %lu to file %s\n", writ, outf);
     fclose(f);
     return 0;
 }
 
 int main(int argc, char **argv){
-    gen_obj_file();
+    if(gen_obj_file() != 0) perror("Error generate obj file\n");
     if (load_img(argv[1], 0) != 0){
-        fprintf(stdout, "Failed load program\n");
+        printf("Failed load program\n");
         exit(EXIT_FAILURE);
     }
     start(0);
