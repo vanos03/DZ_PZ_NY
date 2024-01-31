@@ -6,7 +6,7 @@
 #define MAX_SIZE_UINT16 65535
 #define FUNC_COUNT 16
 
-#define GET_OPC(opc) ((opc) >> 12) //получение опкода (первых 4 бит)
+#define GET_OPC(opc) ((opc) >> 12)
 #define IMM5_TO_UINT16(val) transform_imm_to_uint16(val, 5)
 #define GET_OFFSET_ADDR(val) transform_imm_to_uint16((val)&0x1ff, 9)
 #define GET_FIVE_RIGHT_BITS(val) ((val >> 5)&1)
@@ -14,7 +14,7 @@
 #define GET_DR_ADDR(val) ((val >> 9)&0x7)
 #define GET_SR1_ADDR(val) ((val >> 6)&0x7)
 #define GET_SR2_ADDR(val) ((val)&0x7)
-#define GET_TRAP_OPC(val) ((val)&0xff)
+#define GET_TRAP_OPC(val) ((val) & 0xff)
 
 uint16_t MEM_START_ADDR = 0x3000;
 uint16_t mem[MAX_SIZE_UINT16] = {0};
@@ -32,9 +32,6 @@ enum stat status = running;
 enum registers {R0 = 0, R1, R2, R3, R4, R5, R6, R7, RPC, RCND, RCNT};
 uint16_t registers[RCND] = {0};
 enum flags {FP = 1, FZ = 2, FN = 4};
-
-typedef void (*trap_exec_func)();
-enum {trap_offset = 0x20};
 
 static uint16_t mread(uint16_t addr) {return mem[addr];}
 static uint16_t mwrite(uint16_t addr, uint16_t val) {mem[addr] = val;}
@@ -93,7 +90,7 @@ static void tputs(){
     }
 }
 static void tgetu16(){
-    fscanf(stdin, "%hu", &registers[R0]);
+    fscanf(stdin, "scan: %hu", &registers[R0]);
 }
 static void tputu16(){
     fprintf(stdout, "%hu", registers[R0]);
@@ -102,14 +99,18 @@ static void tend(){
     status = disabled;
 }
 
+typedef void (*trap_exec_func)();
+enum {trap_offset = 0x20};
+
 trap_exec_func trap_exec[6] = {tgetc, tputc, tputs, tgetu16, tputu16, tend};
+
 static void trap(uint16_t val){
     trap_exec[GET_TRAP_OPC(val) - trap_offset]();
 }
 
 
 enum{
-    OPC_ADD = 0,
+    OPC_ADD = 1,
     OPC_AND,
     OPC_OR,
     OPC_NOT,
@@ -118,6 +119,7 @@ enum{
 };
 
 int load_img(char *filename, uint16_t offset){
+    puts("load img");
     FILE *input_file = fopen(filename, "rb");
 
     if (input_file == NULL){
@@ -133,12 +135,13 @@ int load_img(char *filename, uint16_t offset){
 }
 
 void start(uint16_t offset){
+    puts("start");
     registers[RPC] = MEM_START_ADDR + offset;
     while(status == running){
         uint16_t instr = mread(registers[RPC]++);
-
-        switch(instr & 0xff){
-            case OPC_ADD:
+        // printf("instruction %x\n", GET_TRAP_OPC(instr));
+        switch(GET_OPC(instr)){
+            case 0x1:
             {
                 add(instr);
                 break;
@@ -164,26 +167,35 @@ void start(uint16_t offset){
                 xor(instr);
                 break;
             }
-            case OPC_TRAP:
+            case 0xf:
             {
                 trap(instr);
                 break;
             }
             default: 
+                printf("undefined instruction %i\n", GET_TRAP_OPC(instr));
                 break;
+                // exit(EXIT_SUCCESS);
         }
     }
 }
 
 uint16_t program[] = {
-    /*mem[0x3000]=*/    0xF026,    //  1111 0000 0010 0110             TRAP trp_in_u16  ;считывает uint16_t из stdin и помещает его в R0
-    /*mem[0x3002]=*/    0x1220,    //  0001 0010 0010 0000             ADD R1,R0,x0     ;прибавляет содержимое R0 к R1
-    /*mem[0x3003]=*/    0xF026,    //  1111 0000 0010 0110             TRAP trp_in_u16  ;считывает uint16_t из stdin и помещает его в R0
-    /*mem[0x3004]=*/    0x1240,    //  0001 0010 0010 0000             ADD R1,R1,R0     ;прибавляет содержимое R0 к R1
-    /*mem[0x3006]=*/    0x1060,    //  0001 0000 0110 0000             ADD R0,R1,x0     ;прибавляет содержимое R1 к R0
-    /*mem[0x3007]=*/    0xF027,    //  1111 0000 0010 0111             TRAP trp_out_u16;выводит содержимое R0 в stdout
-    /*mem[0x3006]=*/    0xF025,    //  1111 0000 0010 0101             HALT             ;остановка
+                        0xF020,    
+                        0xF021,
+                        0xF025
 };
+
+// uint16_t program[] = {
+//     /*mem[0x3000]=*/    0xF023,    //  1111 0000 0010 0011             TRAP trp_in_u16  ;считывает uint16_t из stdin и помещает его в R0
+//                         0xF024,
+//     /*mem[0x3002]=*/    0x1220,    //  0001 0010 0010 0000             ADD R1,R0,x0     ;прибавляет содержимое R0 к R1
+//     /*mem[0x3003]=*/    0xF023,    //  1111 0000 0010 0011             TRAP trp_in_u16  ;считывает uint16_t из stdin и помещает его в R0
+//     /*mem[0x3004]=*/    0x1240,    //  0001 0100 0010 0000             ADD R1,R1,R0     ;прибавляет содержимое R0 к R1
+//     /*mem[0x3006]=*/    0x1060,    //  0001 0000 0110 0000             ADD R0,R1,x0     ;прибавляет содержимое R1 к R0
+//     /*mem[0x3007]=*/    0xF024,    //  1111 0000 0010 0100             TRAP trp_out_u16;выводит содержимое R0 в stdout
+//     /*mem[0x3006]=*/    0xF025,    //  1111 0000 0010 0101             HALT             ;остановка
+// };
 
 int gen_obj_file() {
     char *outf = "sum.obj";
