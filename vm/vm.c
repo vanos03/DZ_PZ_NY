@@ -7,7 +7,6 @@
 #define FUNC_COUNT 16
 
 #define GET_OPC(opc) ((opc) >> 12)
-#define IMM5_TO_UINT16(val) transform_imm_to_uint16(val, 5)
 #define GET_OFFSET_ADDR(val) transform_imm_to_uint16((val)&0x1ff, 9)
 #define GET_FIVE_RIGHT_BITS(val) ((val >> 5)&1)
 #define GET_VAL(val) ((val)&0x1f)
@@ -20,10 +19,10 @@ uint16_t MEM_START_ADDR = 0x3000;
 uint16_t mem[MAX_SIZE_UINT16] = {0};
 
 /*
-R0 - чтение\запись в stdin\stdout
-R1-R7 - просто регистры общего назначения
-RPC - адрес следующей инструкции
-RCND - регистр флагов
+R0 - stdin\stdout
+R1-R7 - рег. о.н.
+RPC - адр. след. инстр.
+RCND - флаги
 */
 
 enum stat {running, disabled};
@@ -38,29 +37,30 @@ static uint16_t mwrite(uint16_t addr, uint16_t val) {mem[addr] = val;}
 
 static void set_flags(enum registers rgstr){
     if (registers[rgstr] == 0) registers[RCND] = FZ;
-    else if (registers[rgstr] >> 15) registers[RCND] = FN; // >>15 получение первого бита, отвечающего за знак
+    else if (registers[rgstr] >> 15) registers[RCND] = FN; 
     else registers[RCND] = FP;
 }
 
-static inline uint16_t transform_imm_to_uint16(uint16_t n, int b){
-    if ((n >> (b-1)) &1) return (n|0xFFFF << b);
-    else return n;
+
+static uint16_t sext(uint16_t n, int b) { 
+    return ((n>>(b-1))&1) ? (n|(0xFFFF << b)) : n;
 }
+#define SEXTIMM(i) sext(GET_VAL(i),5)
 
 static void add(uint16_t val){
-    if (GET_FIVE_RIGHT_BITS(val)) registers[GET_DR_ADDR(val)] = registers[GET_SR1_ADDR(val)] + IMM5_TO_UINT16(val);
+    if (GET_FIVE_RIGHT_BITS(val)) registers[GET_DR_ADDR(val)] = registers[GET_SR1_ADDR(val)] + SEXTIMM(val);
     else registers[GET_DR_ADDR(val)] = registers[GET_SR1_ADDR(val)] + registers[GET_SR2_ADDR(val)];
     set_flags(GET_DR_ADDR(val));
 }
 
 static void and(uint16_t val){
-    if (GET_FIVE_RIGHT_BITS(val)) registers[GET_DR_ADDR(val)] = registers[GET_SR1_ADDR(val)] & IMM5_TO_UINT16(val);
+    if (GET_FIVE_RIGHT_BITS(val)) registers[GET_DR_ADDR(val)] = registers[GET_SR1_ADDR(val)] & SEXTIMM(val);
     else registers[GET_DR_ADDR(val)] = registers[GET_SR1_ADDR(val)] & registers[GET_SR2_ADDR(val)];
     set_flags(GET_DR_ADDR(val));
 }
 
 static void or(uint16_t val){
-    if (GET_FIVE_RIGHT_BITS(val)) registers[GET_DR_ADDR(val)] = registers[GET_SR1_ADDR(val)] | IMM5_TO_UINT16(val);
+    if (GET_FIVE_RIGHT_BITS(val)) registers[GET_DR_ADDR(val)] = registers[GET_SR1_ADDR(val)] | SEXTIMM(val);
     else registers[GET_DR_ADDR(val)] = registers[GET_SR1_ADDR(val)] | registers[GET_SR2_ADDR(val)];
     set_flags(GET_DR_ADDR(val));
 }
@@ -71,7 +71,7 @@ static void not(uint16_t val){
 }
 
 static void xor(uint16_t val){
-    if (GET_FIVE_RIGHT_BITS(val)) registers[GET_DR_ADDR(val)] = registers[GET_SR1_ADDR(val)] ^ IMM5_TO_UINT16(val);
+    if (GET_FIVE_RIGHT_BITS(val)) registers[GET_DR_ADDR(val)] = registers[GET_SR1_ADDR(val)] ^ SEXTIMM(val);
     else registers[GET_DR_ADDR(val)] = registers[GET_SR1_ADDR(val)] ^ registers[GET_SR2_ADDR(val)];
     set_flags(GET_DR_ADDR(val));
 }
@@ -90,7 +90,7 @@ static void tputs(){
     }
 }
 static void tgetu16(){
-    fscanf(stdin, "scan: %hu", &registers[R0]);
+    fscanf(stdin, "%hu", &registers[R0]);
 }
 static void tputu16(){
     fprintf(stdout, "%hu", registers[R0]);
@@ -115,7 +115,7 @@ enum{
     OPC_OR,
     OPC_NOT,
     OPC_XOR,
-    OPC_TRAP
+    OPC_TRAP = 15
 };
 
 int load_img(char *filename, uint16_t offset){
@@ -139,35 +139,34 @@ void start(uint16_t offset){
     registers[RPC] = MEM_START_ADDR + offset;
     while(status == running){
         uint16_t instr = mread(registers[RPC]++);
-        // printf("instruction %x\n", GET_TRAP_OPC(instr));
+        // printf("\ninstr %x\n", instr);
         switch(GET_OPC(instr)){
-            // case 0x1:
-            // {
-            //     add(instr);
-            //     break;
-            // }
-
-            // case OPC_AND:
-            // {
-            //     and(instr);
-            //     break;
-            // }
-            // case OPC_OR:
-            // {
-            //     or(instr);
-            //     break;
-            // }
-            // case OPC_NOT:
-            // {
-            //     not(instr);
-            //     break;
-            // }
-            // case OPC_XOR:
-            // {
-            //     xor(instr);
-            //     break;
-            // }
-            case 0xf:
+            case OPC_ADD:
+            {
+                add(instr);
+                break;
+            }
+            case OPC_AND:
+            {
+                and(instr);
+                break;
+            }
+            case OPC_OR:
+            {
+                or(instr);
+                break;
+            }
+            case OPC_NOT:
+            {
+                not(instr);
+                break;
+            }
+            case OPC_XOR:
+            {
+                xor(instr);
+                break;
+            }
+            case OPC_TRAP:
             {
                 trap(instr);
                 break;
@@ -180,22 +179,26 @@ void start(uint16_t offset){
     }
 }
 
-uint16_t program[] = {
-                        0xF020,    
-                        0xF021,
-                        0xF025
-};
-
 // uint16_t program[] = {
-//     /*mem[0x3000]=*/    0xF023,    //  1111 0000 0010 0011             TRAP trp_in_u16  ;считывает uint16_t из stdin и помещает его в R0
+//                         0xF023,    
 //                         0xF024,
-//     /*mem[0x3002]=*/    0x1220,    //  0001 0010 0010 0000             ADD R1,R0,x0     ;прибавляет содержимое R0 к R1
-//     /*mem[0x3003]=*/    0xF023,    //  1111 0000 0010 0011             TRAP trp_in_u16  ;считывает uint16_t из stdin и помещает его в R0
-//     /*mem[0x3004]=*/    0x1240,    //  0001 0100 0010 0000             ADD R1,R1,R0     ;прибавляет содержимое R0 к R1
-//     /*mem[0x3006]=*/    0x1060,    //  0001 0000 0110 0000             ADD R0,R1,x0     ;прибавляет содержимое R1 к R0
-//     /*mem[0x3007]=*/    0xF024,    //  1111 0000 0010 0100             TRAP trp_out_u16;выводит содержимое R0 в stdout
-//     /*mem[0x3006]=*/    0xF025,    //  1111 0000 0010 0101             HALT             ;остановка
+//                         0x1220,
+//                         0xF023,
+//                         0x1240,
+//                         0x1060,
+//                         0xF024,
+//                         0xF025
 // };
+
+uint16_t program[] = {
+    /*mem[0x3000]=*/    0xF023,    //  1111 0000 0010 0011             TRAP trp_in_u16  
+    /*mem[0x3002]=*/    0x1220,    //  0001 0010 0010 0000             ADD R1,R0,x0     
+    /*mem[0x3003]=*/    0xF023,    //  1111 0000 0010 0011             TRAP trp_in_u16  
+    /*mem[0x3004]=*/    0x1240,    //  0001 0100 0010 0000             ADD R1,R1,R0    
+    /*mem[0x3006]=*/    0x1060,    //  0001 0000 0110 0000             ADD R0,R1,x0     
+    /*mem[0x3007]=*/    0xF024,    //  1111 0000 0010 0100             TRAP trp_out_u16
+    /*mem[0x3006]=*/    0xF025,    //  1111 0000 0010 0101             HALT          
+};
 
 int gen_obj_file() {
     char *outf = "test.obj";
