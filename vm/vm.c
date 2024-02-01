@@ -191,13 +191,13 @@ void start(uint16_t offset){
 // };
 
 uint16_t program[] = {
-    /*mem[0x3000]=*/    0xF023,    //  1111 0000 0010 0011             TRAP trp_in_u16  
-    /*mem[0x3002]=*/    0x1220,    //  0001 0010 0010 0000             ADD R1,R0,x0     
-    /*mem[0x3003]=*/    0xF023,    //  1111 0000 0010 0011             TRAP trp_in_u16  
-    /*mem[0x3004]=*/    0x1240,    //  0001 0100 0010 0000             ADD R1,R1,R0    
-    /*mem[0x3006]=*/    0x1060,    //  0001 0000 0110 0000             ADD R0,R1,x0     
-    /*mem[0x3007]=*/    0xF024,    //  1111 0000 0010 0100             TRAP trp_out_u16
-    /*mem[0x3006]=*/    0xF025,    //  1111 0000 0010 0101             HALT          
+                        0xF023,    //  1111 0000 0010 0011             TRAP tgetu16  
+                        0x1220,    //  0001 0010 0010 0000             ADD R1,R0,x0     
+                        0xF023,    //  1111 0000 0010 0011             TRAP tgetu16  
+                        0x1240,    //  0001 0100 0010 0000             ADD R1,R1,R0    
+                        0x1060,    //  0001 0000 0110 0000             ADD R0,R1,x0     
+                        0xF024,    //  1111 0000 0010 0100             TRAP tputu16
+                        0xF025,    //  1111 0000 0010 0101             HALT          
 };
 
 int gen_obj_file() {
@@ -214,6 +214,10 @@ int gen_obj_file() {
 }
 
 int main(int argc, char **argv){
+    if (argc < 2){
+        printf("Not enought arguments.\nUse: ./vm <obj_file>\n");
+        exit(EXIT_FAILURE);
+    }
     if(gen_obj_file() != 0) perror("Error generate obj file\n");
     if (load_img(argv[1], 0) != 0){
         printf("Failed load program\n");
