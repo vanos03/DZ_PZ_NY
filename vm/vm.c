@@ -76,19 +76,19 @@ static void xor(uint16_t val){
     set_flags(GET_DR_ADDR(val));
 }
 
-static void tgetc(){
-    registers[R0] = getchar();
-}
-static void tputc(){
-    fprintf(stdout, "%c", (char)registers[R0]);
-}
-static void tputs(){
-    uint16_t *p = mem + registers[R0];
-    while(*p){
-        fprintf(stdout, "%c", (char)*p);
-        p++;
-    }
-}
+// static void tgetc(){
+//     registers[R0] = getchar();
+// }
+// static void tputc(){
+//     fprintf(stdout, "%c", (char)registers[R0]);
+// }
+// static void tputs(){
+//     uint16_t *p = mem + registers[R0];
+//     while(*p){
+//         fprintf(stdout, "%c", (char)*p);
+//         p++;
+//     }
+// }
 static void tgetu16(){
     fscanf(stdin, "%hu", &registers[R0]);
 }
@@ -102,7 +102,7 @@ static void tend(){
 typedef void (*trap_exec_func)();
 enum {trap_offset = 0x20};
 
-trap_exec_func trap_exec[6] = {tgetc, tputc, tputs, tgetu16, tputu16, tend};
+trap_exec_func trap_exec[6] = {tgetu16, tputu16, tend};
 
 static void trap(uint16_t val){
     trap_exec[GET_TRAP_OPC(val) - trap_offset]();
@@ -191,13 +191,13 @@ void start(uint16_t offset){
 // };
 
 uint16_t program[] = {
-                        0xF023,    //  1111 0000 0010 0011             TRAP tgetu16  
+                        0xF020,    //  1111 0000 0010 0000             TRAP tgetu16  
                         0x1220,    //  0001 0010 0010 0000             ADD R1,R0,x0     
-                        0xF023,    //  1111 0000 0010 0011             TRAP tgetu16  
+                        0xF020,    //  1111 0000 0010 0000             TRAP tgetu16  
                         0x1240,    //  0001 0100 0010 0000             ADD R1,R1,R0    
                         0x1060,    //  0001 0000 0110 0000             ADD R0,R1,x0     
-                        0xF024,    //  1111 0000 0010 0100             TRAP tputu16
-                        0xF025,    //  1111 0000 0010 0101             HALT          
+                        0xF021,    //  1111 0000 0010 0001             TRAP tputu16
+                        0xF022,    //  1111 0000 0010 0010             HALT          
 };
 
 int gen_obj_file() {
