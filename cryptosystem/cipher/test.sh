@@ -10,6 +10,6 @@ do
 	then
        		echo "True"
 	else
-       		echo "sosi"
+       		echo "False"
 	fi
 done
