@@ -9,10 +9,10 @@
 
 #define BOOT_SIZE 16456
 #define OUTPUT_FILENAME "pack"
-#define BOOT_FILENAME "boot2"
+#define BOOT_FILENAME "boot"
 #define MAX_FILE_SIZE 65535
 
-uint16_t *read_f(char *filename, uint16_t *buf){
+uint32_t *read_f(char *filename, uint32_t *buf){
     int fd = open(filename, O_RDONLY);
     if (fd == -1) {
         perror("open");
@@ -33,8 +33,8 @@ uint16_t *read_f(char *filename, uint16_t *buf){
 
 int main(int argc, char **argv){
 
-    uint16_t *boot_code = malloc(MAX_FILE_SIZE);
-    uint16_t *elf_code = malloc(MAX_FILE_SIZE);
+    uint32_t *boot_code = malloc(MAX_FILE_SIZE*sizeof(uint32_t));
+    uint32_t *elf_code = malloc(MAX_FILE_SIZE*sizeof(uint32_t));
 
     memset(boot_code, 0, MAX_FILE_SIZE);
     memset(elf_code, 0, MAX_FILE_SIZE);
@@ -49,14 +49,20 @@ int main(int argc, char **argv){
     }
 
     printf("size boot %d\nsize elf %d\n", boot_size, elf_size);
-    uint16_t *code = malloc(boot_size+elf_size);
+    uint32_t *code = malloc(boot_size+elf_size);
     
     memcpy(code, boot_code, boot_size);
     memcpy(code+boot_size, elf_code, elf_size);
+    free(boot_code);
+    free(elf_code);
+    boot_code = NULL;
+    elf_code = NULL;
 
     write(fd_elf, code, boot_size+elf_size);
     close(fd_elf);
     // sleep(1);
+    free(code);
+    code = NULL;
 
     printf("Create \"%s\"\n", "pack");
     // system ("./pack");

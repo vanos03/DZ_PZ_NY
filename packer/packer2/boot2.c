@@ -17,10 +17,10 @@ int main(int argc, char **argv){
         exit(EXIT_FAILURE);
     }
 
-    int elf_size = lseek(fd, 0, SEEK_END) ;
+    int elf_size = lseek(fd, 0, SEEK_END) - OFFSET;
     lseek(fd, OFFSET, SEEK_SET);
 
-    uint8_t *elf_code = malloc(elf_size);
+    uint32_t *elf_code = malloc(elf_size*sizeof(uint32_t));
     memset(elf_code, 0, elf_size);
 
     if (read(fd, elf_code, elf_size) <= 0){
