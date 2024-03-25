@@ -52,7 +52,7 @@ int main(){
         block = block*134775813+1;
         block_encr ^=block;
 
-        write(fd_out, &block_encr, sizeof(unsigned int));
+        write(fd_out, &block_encr, count_read);
         i++;
         printf("block: %x block_crypt: %x read: %d\n", block, block_encr, count_read);
     }
